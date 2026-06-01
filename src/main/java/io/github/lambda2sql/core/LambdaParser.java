@@ -50,8 +50,64 @@ public final class LambdaParser {
                     whereParts.add(binary(args, nextConnector, "="));
                     nextConnector = "AND";
                 }
+                case "ne" -> {
+                    whereParts.add(binary(args, nextConnector, "!="));
+                    nextConnector = "AND";
+                }
                 case "gt" -> {
                     whereParts.add(binary(args, nextConnector, ">"));
+                    nextConnector = "AND";
+                }
+                case "ge" -> {
+                    whereParts.add(binary(args, nextConnector, ">="));
+                    nextConnector = "AND";
+                }
+                case "lt" -> {
+                    whereParts.add(binary(args, nextConnector, "<"));
+                    nextConnector = "AND";
+                }
+                case "le" -> {
+                    whereParts.add(binary(args, nextConnector, "<="));
+                    nextConnector = "AND";
+                }
+                case "like" -> {
+                    whereParts.add(like(args, nextConnector, "LIKE", true, true));
+                    nextConnector = "AND";
+                }
+                case "notLike" -> {
+                    whereParts.add(like(args, nextConnector, "NOT LIKE", true, true));
+                    nextConnector = "AND";
+                }
+                case "likeLeft" -> {
+                    whereParts.add(like(args, nextConnector, "LIKE", true, false));
+                    nextConnector = "AND";
+                }
+                case "likeRight" -> {
+                    whereParts.add(like(args, nextConnector, "LIKE", false, true));
+                    nextConnector = "AND";
+                }
+                case "isNull" -> {
+                    whereParts.add(unary(args, nextConnector, "IS", "NULL"));
+                    nextConnector = "AND";
+                }
+                case "isNotNull" -> {
+                    whereParts.add(unary(args, nextConnector, "IS NOT", "NULL"));
+                    nextConnector = "AND";
+                }
+                case "in" -> {
+                    whereParts.add(in(args, nextConnector, "IN"));
+                    nextConnector = "AND";
+                }
+                case "notIn" -> {
+                    whereParts.add(in(args, nextConnector, "NOT IN"));
+                    nextConnector = "AND";
+                }
+                case "between" -> {
+                    whereParts.add(between(args, nextConnector, "BETWEEN"));
+                    nextConnector = "AND";
+                }
+                case "notBetween" -> {
+                    whereParts.add(between(args, nextConnector, "NOT BETWEEN"));
                     nextConnector = "AND";
                 }
                 case "and" -> {
@@ -138,7 +194,10 @@ public final class LambdaParser {
      */
     private static boolean isSupportedMethod(String method) {
         return switch (method) {
-            case "eq", "gt", "and", "or", "orderByDesc", "orderByAsc", "limit" -> true;
+            case "eq", "ne", "gt", "ge", "lt", "le",
+                    "like", "notLike", "likeLeft", "likeRight",
+                    "isNull", "isNotNull", "in", "notIn", "between", "notBetween",
+                    "and", "or", "orderByDesc", "orderByAsc", "limit" -> true;
             default -> false;
         };
     }
@@ -217,6 +276,55 @@ public final class LambdaParser {
     private static Condition binary(List<String> args, String connector, String operator) {
         requireArgCount(args, 2);
         return new Condition(connector, ColumnMapper.toColumnName(args.get(0)), operator, ValueFormatter.format(args.get(1)));
+    }
+
+    /**
+     * 解析无值条件，例如 .isNull(User::getDeletedAt)。
+     */
+    private static Condition unary(List<String> args, String connector, String operator, String valueSql) {
+        requireArgCount(args, 1);
+        return new Condition(connector, ColumnMapper.toColumnName(args.get(0)), operator, valueSql);
+    }
+
+    /**
+     * 解析 LIKE 条件，并根据操作符补齐左右通配符。
+     */
+    private static Condition like(List<String> args, String connector, String operator, boolean leftWildcard, boolean rightWildcard) {
+        requireArgCount(args, 2);
+        return new Condition(
+                connector,
+                ColumnMapper.toColumnName(args.get(0)),
+                operator,
+                ValueFormatter.formatLike(args.get(1), leftWildcard, rightWildcard)
+        );
+    }
+
+    /**
+     * 解析 IN / NOT IN 条件。
+     */
+    private static Condition in(List<String> args, String connector, String operator) {
+        if (args.size() < 2) {
+            throw new IllegalArgumentException("in 至少需要 2 个参数");
+        }
+        return new Condition(
+                connector,
+                ColumnMapper.toColumnName(args.get(0)),
+                operator,
+                ValueFormatter.formatList(args.subList(1, args.size()))
+        );
+    }
+
+    /**
+     * 解析 BETWEEN / NOT BETWEEN 条件。
+     */
+    private static Condition between(List<String> args, String connector, String operator) {
+        requireArgCount(args, 3);
+        return new Condition(
+                connector,
+                ColumnMapper.toColumnName(args.get(0)),
+                operator,
+                ValueFormatter.format(args.get(1)) + " AND " + ValueFormatter.format(args.get(2))
+        );
     }
 
     /**

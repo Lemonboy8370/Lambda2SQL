@@ -28,7 +28,21 @@ Lambda2SQL 适合在排查接口问题、确认查询条件、编写文档、代
 | Lambda 写法 | SQL 含义 |
 | --- | --- |
 | `.eq(X, val)` | `col = val` |
+| `.ne(X, val)` | `col != val` |
 | `.gt(X, val)` | `col > val` |
+| `.ge(X, val)` | `col >= val` |
+| `.lt(X, val)` | `col < val` |
+| `.le(X, val)` | `col <= val` |
+| `.like(X, val)` | `col LIKE '%val%'` |
+| `.notLike(X, val)` | `col NOT LIKE '%val%'` |
+| `.likeLeft(X, val)` | `col LIKE '%val'` |
+| `.likeRight(X, val)` | `col LIKE 'val%'` |
+| `.isNull(X)` | `col IS NULL` |
+| `.isNotNull(X)` | `col IS NOT NULL` |
+| `.in(X, a, b)` | `col IN (a, b)` |
+| `.notIn(X, a, b)` | `col NOT IN (a, b)` |
+| `.between(X, a, b)` | `col BETWEEN a AND b` |
+| `.notBetween(X, a, b)` | `col NOT BETWEEN a AND b` |
 | `.orderByAsc(X)` | `ORDER BY col ASC` |
 | `.orderByDesc(X)` | `ORDER BY col DESC` |
 | `.limit(n)` | `LIMIT n` |
@@ -113,7 +127,7 @@ java -jar target/lambda2sql.jar
 ## 说明
 
 - Java 变量值无法在静态代码片段中获取真实运行时内容，因此会按变量名字符串处理，例如 `stationId` 会输出为 `'stationId'`。
-- 当前仅实现部分 MyBatis-Plus 操作符，后续可继续补充 `ne`、`ge`、`lt`、`le`、`like`、`in`、`between` 等。
+- 当前暂未支持 `last(...)`、动态条件参数和集合变量展开。
 - 复杂 Java 表达式、方法调用参数和动态条件暂未完整支持。
 
 ## License

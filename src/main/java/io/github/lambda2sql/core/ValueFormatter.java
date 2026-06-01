@@ -1,5 +1,8 @@
 package io.github.lambda2sql.core;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * 将 Lambda 参数值格式化为 SQL 字面量。
  *
@@ -23,9 +26,35 @@ final class ValueFormatter {
         if (value.matches("-?\\d+(\\.\\d+)?")) {
             return value;
         }
-        if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
-            value = value.substring(1, value.length() - 1);
-        }
+        value = unquote(value);
         return "'" + value.replace("'", "''") + "'";
+    }
+
+    /**
+     * 格式化 LIKE 参数，并按需要补齐 % 通配符。
+     */
+    static String formatLike(String rawValue, boolean leftWildcard, boolean rightWildcard) {
+        String value = unquote(rawValue.trim());
+        String pattern = (leftWildcard ? "%" : "") + value + (rightWildcard ? "%" : "");
+        return "'" + pattern.replace("'", "''") + "'";
+    }
+
+    /**
+     * 格式化 IN / NOT IN 参数列表。
+     */
+    static String formatList(List<String> rawValues) {
+        return rawValues.stream()
+                .map(ValueFormatter::format)
+                .collect(Collectors.joining(", ", "(", ")"));
+    }
+
+    /**
+     * 去掉字符串参数的外层单双引号。
+     */
+    private static String unquote(String value) {
+        if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
     }
 }
