@@ -9,4 +9,4 @@ jpackage `
   --main-jar lambda2sql.jar `
   --main-class io.github.lambda2sql.App `
   --dest target/package `
-  --app-version 0.1.0
+  --app-version 1.0.0
